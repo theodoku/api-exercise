@@ -1,46 +1,41 @@
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
-
-export const getUsers = createAsyncThunk(
-  "users/getusers",
-  async (thunkAPI) => {
-    try {
-      const response = await axios.get("https://randomuser.me/api/?results=5");
-      const { result } = response.data;
-      return result;
-    } catch (error) {
-      return thunkAPI.rejectWithValue(error.message);
-    }
-  }
-);
 
 const initialState = {
   users: [],
-  isLoading: true,
-  error: '',
+  isLoading: false,
+  error: null,
 };
 
-export const usersSlice = createSlice({
+const usersSlice = createSlice({
   name: "users",
   initialState,
-  extraReducers: (builder) => {
-    builder
-      .addCase(getUsers.pending, (state, action) => ({
-        ...state,
-        users: action.payload,
-        isLoading: true,
-      }))
-      .addCase(getUsers.fulfilled, (state, action) => ({
-        ...state,
-        users: action.payload,
-        isLoading: false,
-      }))
-      .addCase(getUsers.rejected, (state, action) => ({
-        ...state,
-        isLoading: false,
-        error: action.error.message,
-      }));
+  reducers: {
+    getUsersStart(state) {
+      state.isLoading = true;
+      state.error = null;
+    },
+    getUsersSuccess(state, action) {
+      state.isLoading = false;
+      state.users = action.payload;
+    },
+    getUsersFailure(state, action) {
+      state.isLoading = false;
+      state.error = action.payload;
+    },
   },
 });
+
+export const { getUsersStart, getUsersSuccess, getUsersFailure } = usersSlice.actions;
+
+export const getUsers = () => async (dispatch) => {
+  try {
+    dispatch(getUsersStart());
+    const response = await axios.get("https://randomuser.me/api/?results=10");
+    dispatch(getUsersSuccess(response.data.results));
+  } catch (error) {
+    dispatch(getUsersFailure(error.message));
+  }
+};
 
 export default usersSlice.reducer;
